@@ -1,8 +1,12 @@
 package gumtreeFacade;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.UUID;
 
 import fr.labri.gumtree.client.DiffClient;
 import fr.labri.gumtree.client.TreeGeneratorRegistry;
@@ -12,6 +16,12 @@ import fr.labri.gumtree.tree.Tree;
 public class AST {
 	
 	
+	public static String getTreeAST(String fileContents, String extension) throws IOException {
+		String filePath = getTempFileFromString(fileContents, extension).getAbsolutePath();
+		
+		return getTreeAST(filePath);
+	}
+
 	public static String getTreeAST(String filePath) throws IOException {
 		String json = null;
 
@@ -23,12 +33,21 @@ public class AST {
 		return json;
 	}
 	
-	public static String getDiffAST(String filePath1, String filePath2) throws IOException {
-		String json = null;
+	public static String getDiffAST(String srcContents, String destContents, String extension) throws IOException {
 		
-		if (filePath1 != null && filePath2 != null) {
-			json = captureOutput(filePath1, filePath2);
+		String srcPath = getTempFileFromString(srcContents, extension).getAbsolutePath();
+		String destPath = getTempFileFromString(destContents, extension).getAbsolutePath();
+		
+		return getDiffAST(srcPath, destPath);
+	}
+
+	public static String getDiffAST(String srcFilePath, String destFilePath) {
+		String json = null;
+
+		if (srcFilePath != null && destFilePath != null) {
+			json = captureOutput(srcFilePath, destFilePath);
 		}
+		
 		return json;
 	}
 	
@@ -49,8 +68,30 @@ public class AST {
 	    return baos.toString();
 	}
 	
+	private static File getTempFileFromString(String fileContents, String extension){
+		File tmpFile = null;
+		
+		extension = "." + extension;
+		
+		try {
+			tmpFile = File.createTempFile(UUID.randomUUID().toString(), extension);
+			BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile));
+	        bw.write(fileContents);
+	        bw.close();
+	        //return fromFile(tmpFile.getAbsolutePath());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return tmpFile;
+	}
+	
 	public static void main(String[] args) throws IOException {
 		//System.out.println(getTreeAST("/home/nicozone/workspace/gumtree/samples/java/Example_v1.java"));
-		System.out.println(getDiffAST("/home/nicozone/workspace/gumtree/samples/java/Example_v1.java", "/home/nicozone/workspace/gumtree/samples/java/Example_v2.java"));
+		//System.out.println(getDiffAST("/Users/mihai/work/gumtree/gumtree/samples/java/simple/AnnotationsTestv1.java", "/Users/mihai/work/gumtree/gumtree/samples/java/simple/AnnotationsTestv3.java"));
+		//System.out.println(getDiffAST("/Users/mihai/work/gumtree/gumtree/samples/java/oldies/Perm_v0.java", "/Users/mihai/work/gumtree/gumtree/samples/java/oldies/Perm_v1.java"));
+		
+		//System.out.println(getTreeAST("public class A{Integer f; void foo(){Float f;}}", "java"));
+		System.out.println(getDiffAST("public class A{Integer f; void foo(){Float f;}}", "public class A{Integer f; Double g; void foo(){Float foo;}}", "java"));
 	}
 }
